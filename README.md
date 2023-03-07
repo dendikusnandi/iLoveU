@@ -65,9 +65,6 @@ sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.di
 ## Other Services:
 Speedtest CLI
 
-<p align="center">
-<img height=21 src="https://komarev.com/ghpvc/?username=dendikusnandi">
-</p>
 <div height='45' align="center">
 <h3>Contact me: <br>
 <a href="https://github.com/dendikusnandi"> <img src="https://cdn.jsdelivr.net/npm/simple-icons@3.0.1/icons/github.svg" height='50'> </a>
@@ -75,6 +72,8 @@ Speedtest CLI
 </h3>
 </div>
 <h3 align="center">
-<img height=150 src="https://github-readme-stats.vercel.app/api/top-langs/?username=dendikusnandi&layout=compact&theme=dark">
 <img height=150 src="https://github-readme-stats.vercel.app/api?username=dendikusnandi&count_private=true&show_icons=true&theme=dark">
 <h3 align="center">
+
+
+## Thanks
