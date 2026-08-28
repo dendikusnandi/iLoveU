@@ -3,7 +3,7 @@
 
  instal plugin hide backend :
    ```bash
-    wget https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/package-gohide.sh && chmod +x package-gohide.sh && bash package-gohide.sh
+    wget https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/package-gohide.sh && chmod +x package-gohide.sh && bash package-gohide.sh
     cd 
     rm -rf package-gohide.sh
    ```

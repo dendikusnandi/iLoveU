@@ -11,9 +11,9 @@ echo -e "${blue}─────────────────────�
 echo -e "${green}           Root Access           ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 
-sshd_conf_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/sshd"
-banner_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/banner"
-common_password_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/common-password"
+sshd_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/sshd"
+banner_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/banner"
+common_password_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/common-password"
 
 echo "Memulai proses instalasi, mohon tunggu..."
 

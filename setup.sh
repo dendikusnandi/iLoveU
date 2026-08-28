@@ -118,33 +118,32 @@ isp=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
 domain=$(cat /etc/xray/domain)
 ip=$(wget -qO- ipinfo.io/ip)
 
-# Mendapatkan data izin dan key
-data=$(curl -s https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/izin)
-key=$(echo "$data" | grep "$ip" | awk '{print $2}')
+# Gerbang izin berbasis daftar IP (file `izin` di repo) DIBUANG pada fork ini:
+# installer tidak boleh bergantung pada daftar IP eksternal untuk bisa jalan.
 
 # URL sumber konfigurasi dan binary
 nginx_key_url="https://nginx.org/keys/nginx_signing.key"
-dropbear_init_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/dropbear/dropbear"
-dropbear_conf_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/dropbear"
-dropbear_dss_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/dropbear/dropbear_dss_host_key"
-sshd_conf_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/sshd"
-banner_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/banner"
-common_password_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/examples/common-password"
-ws_py_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/websocket/ws.py"
-haproxy_cfg_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/Haproxy/haproxy.cfg"
-xray_conf_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/nginx/xray.conf"
-udp_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/udp/udp-custom-linux-amd64"
-nginx_conf_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/nginx/nginx.conf"
-badvpn_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/main/BadVPN-UDPWG/badvpn"
-openvpn_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/fodder/openvpn/openvpn.zip"
-gotop_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/gotop"
-vmess_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/main/VMess-VLESS-Trojan+Websocket+gRPC/vmess/config.json"
-vless_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/main/VMess-VLESS-Trojan+Websocket+gRPC/vless/config.json"
-trojan_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/main/VMess-VLESS-Trojan+Websocket+gRPC/trojan/config.json"
+dropbear_init_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/dropbear/dropbear"
+dropbear_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/dropbear"
+dropbear_dss_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/dropbear/dropbear_dss_host_key"
+sshd_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/sshd"
+banner_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/banner"
+common_password_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/common-password"
+ws_py_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/websocket/ws.py"
+haproxy_cfg_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/Haproxy/haproxy.cfg"
+xray_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/nginx/xray.conf"
+udp_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/udp/udp-custom-linux-amd64"
+nginx_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/nginx/nginx.conf"
+badvpn_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/main/BadVPN-UDPWG/badvpn"
+openvpn_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/openvpn/openvpn.zip"
+gotop_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/gotop"
+vmess_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/main/VMess-VLESS-Trojan+Websocket+gRPC/vmess/config.json"
+vless_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/main/VMess-VLESS-Trojan+Websocket+gRPC/vless/config.json"
+trojan_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/main/VMess-VLESS-Trojan+Websocket+gRPC/trojan/config.json"
 
 
 
-shadowsocks_url="https://raw.githubusercontent.com/hidessh99/scAUTOku/main/VMess-VLESS-Trojan+Websocket+gRPC/shadowsocks/config.json"
+shadowsocks_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/main/VMess-VLESS-Trojan+Websocket+gRPC/shadowsocks/config.json"
 
 # Info OS
 os_id=$(grep -w ID /etc/os-release | head -n1 | sed 's/ID=//g' | sed 's/"//g')
@@ -596,7 +595,7 @@ else
     echo -e "${red}Failed to download badvpn${neutral}"
 fi
 
-wget --no-check-certificate -O /opt/bbr.sh https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/bbr.sh
+wget --no-check-certificate -O /opt/bbr.sh https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/bbr.sh
 chmod 755 /opt/bbr.sh
 /opt/bbr.sh
 
@@ -985,15 +984,32 @@ LimitNOFILE=1000000
 WantedBy=multi-user.target
 EOF
 
-if [ -f /root/.key ]; then
-    rm -f /root/.key
-fi
-echo "$key" >>/root/.key
+# /root/.key dihapus bersama gerbang izin — tidak ada yang membacanya.
+rm -f /root/.key
 
+# UUID unik per-VPS. Sebelumnya `sed` menimpa UUID literal tanpa cek hasil:
+# kalau config upstream berganti UUID, sed gagal diam-diam dan SEMUA VPS
+# hasil install memakai UUID default yang sama (siapa pun yang tahu UUID itu
+# bisa memakai server ini). Sekarang hasilnya diverifikasi dan gagal = stop.
 uuid_baru=$(cat /proc/sys/kernel/random/uuid)
+uuid_lama="1d1c1d94-6987-4658-a4dc-8821a30fe7e0"
 for config in vmess vless trojan shadowsocks; do
-    sudo sed -i "s/1d1c1d94-6987-4658-a4dc-8821a30fe7e0/$uuid_baru/g" /etc/xray/$config/config.json
+    cfg="/etc/xray/$config/config.json"
+    [ -f "$cfg" ] || {
+        echo -e "${red}FATAL: $cfg tidak ada — install dibatalkan${neutral}"
+        exit 1
+    }
+    sudo sed -i "s/$uuid_lama/$uuid_baru/g" "$cfg"
+    if grep -q "$uuid_lama" "$cfg"; then
+        echo -e "${red}FATAL: UUID default masih ada di $cfg${neutral}"
+        exit 1
+    fi
+    if ! grep -q "$uuid_baru" "$cfg"; then
+        echo -e "${red}FATAL: UUID baru gagal ditulis ke $cfg${neutral}"
+        exit 1
+    fi
 done
+echo -e "${green}UUID unik VPS ini: $uuid_baru${neutral}"
 
 npm i --prefix /usr/bin express express-fileupload
 
@@ -1047,7 +1063,7 @@ echo -e "${green}           INSTALLASI Menu              ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 
 
-wget https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/menu.sh && chmod +x menu.sh && ./menu.sh
+wget https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/menu.sh && chmod +x menu.sh && ./menu.sh
 
 cd
 
@@ -1058,7 +1074,7 @@ echo -e "${green}       INSTALLASI plugin HideSSH        ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 
 
-wget https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/package-gohide.sh && chmod +x package-gohide.sh && ./package-gohide.sh
+wget https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/package-gohide.sh && chmod +x package-gohide.sh && ./package-gohide.sh
 cd 
 rm -rf package-gohide.sh
 
@@ -1069,7 +1085,7 @@ rm -rf package-gohide.sh
 
 
 # cd
-# wget https://raw.githubusercontent.com/hidessh99/scAUTOku/refs/heads/main/backend/install-go.sh && chmod +x install-go.sh && ./install-go.sh
+# wget https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/backend/install-go.sh && chmod +x install-go.sh && ./install-go.sh
 # rm -rf install-go.sh
 # cd
 
