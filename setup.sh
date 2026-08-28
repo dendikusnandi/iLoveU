@@ -1176,6 +1176,20 @@ if [ -d "/root/rmck" ]; then
     rm -rf /root/rmck
 fi
 
+# Bersihkan sisa instalasi. Semua skrip pengelola sudah dipasang ke /usr/bin
+# oleh menu.sh, jadi salinan installer di /root tidak dipakai lagi — dan kalau
+# tertinggal, suatu saat bisa dijalankan tanpa sadar lalu menimpa config yang
+# sudah disesuaikan. /root/scautoku SENGAJA tidak disentuh: itu sumber durable
+# untuk override haproxy/nginx dan `reapply-app`.
+for leftover in /root/setup.sh /root/menu.sh /root/install-go.sh \
+                /root/openvpn.zip /root/vnstat-2.9.tar.gz /root/gotop \
+                /root/izin /root/.key; do
+    [ -e "$leftover" ] && rm -rf "$leftover"
+done
+rm -rf /root/vnstat-2.9 2>/dev/null
+# .upstream hanya bahan rollback selama instalasi, tidak dipakai setelahnya.
+rm -f /etc/haproxy/haproxy.cfg.upstream 2>/dev/null
+
 
 clear
 echo -e "${blue}─────────────────────────────────────────${neutral}"
