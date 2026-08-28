@@ -50,7 +50,10 @@ echo ""
 echo -e "—————————————————————————————————————"
 echo "   Username : $user"
 while true; do
-    read -r -p "   Password: " passwd
+    # -s: password tidak ditampilkan saat diketik, supaya tidak terbaca orang
+    # di sekitar dan tidak tertinggal di scrollback terminal.
+    read -r -s -p "   Password: " passwd
+    echo ""
     if [[ -z "$passwd" ]]; then
         echo -e "${red}   Password cannot be empty${reset}"
     else
@@ -116,13 +119,30 @@ exp="$(chage -l "$user" 2>/dev/null | grep "Account expires" | awk -F": " '{prin
 
 if [[ $iplim != "0" ]]; then
     echo "${iplim}" >/etc/ssh/${user}
+    chmod 600 "/etc/ssh/${user}"
 fi
 echo "### ${user} ${exp_date}" >>/etc/ssh/.ssh.db
 
+# Backup .ssh.db tiap kali berubah — kalau file rusak/terhapus, seluruh
+# catatan akun (limit IP, riwayat) hilang; chage hanya menyimpan expiry.
+mkdir -p /etc/ssh/backup
+cp -f /etc/ssh/.ssh.db "/etc/ssh/backup/.ssh.db.$(date +%Y%m%d)" 2>/dev/null
+chmod 600 /etc/ssh/backup/.ssh.db.* 2>/dev/null
+ls -1t /etc/ssh/backup/.ssh.db.* 2>/dev/null | tail -n +8 | xargs -r rm -f
+
 mkdir -p /var/www/html
 
+# Nama file config diberi token acak. Sebelumnya path-nya bisa ditebak
+# (ssh-<username>.txt) sementara nginx menyajikan /var/www/html di port 81
+# ke 0.0.0.0 — siapa pun yang menebak username bisa mengunduh PASSWORD
+# pelanggan. Token 16 hex membuat URL tidak bisa ditebak, dan file lama
+# milik user yang sama dibuang lebih dulu.
+rm -f /var/www/html/ssh-${user}.txt /var/www/html/ssh-${user}-*.txt
+cfg_token=$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')
+cfg_name="ssh-${user}-${cfg_token}.txt"
+
 # Create configuration file
-cat >/var/www/html/ssh-$user.txt <<END
+cat >/var/www/html/${cfg_name} <<END
 ---------------------
 SSH OVPN Account Details
 ---------------------
@@ -152,6 +172,7 @@ OpenVPN Link     : http://$domain:85
 ---------------------
 Expiration       : $expired
 END
+chmod 644 /var/www/html/${cfg_name}
 
 
 
@@ -184,7 +205,7 @@ END
     echo "───────────────────────────"
     echo "OpenVPN Link     : https://$domain:81/allovpn.zip"
     echo "───────────────────────────"
-    echo "Save Account Link: https://$domain:81/ssh-$user.txt"
+    echo "Save Account Link: https://$domain:81/${cfg_name}"
     echo "───────────────────────────"
     echo "Expiration       : $expired"
     echo ""
@@ -217,7 +238,7 @@ echo -e "WSS Payload      : GET wss://BUG.COM/ HTTP/1.1[crlf]Host: $domain[crlf]
 echo -e "—————————————————————————————————————"
 echo -e "OpenVPN Link     : https://$domain:81/allovpn.zip"
 echo -e "—————————————————————————————————————"
-echo -e "Save Account Link: https://$domain:81/ssh-$user.txt"
+echo -e "Save Account Link: https://$domain:81/${cfg_name}"
 echo -e "—————————————————————————————————————"
 echo -e "Expiration       : $expired"
 echo -e ""

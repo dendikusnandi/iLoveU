@@ -58,7 +58,10 @@ directories=(
 
 for dir in "${directories[@]}"; do
     [ ! -d "$dir" ] && mkdir -p "$dir"
-    chmod 777 "$dir"
+    # Dulu chmod 777: user mana pun di sistem — termasuk akun SSH pelanggan —
+    # bisa menulis ke /etc/xray, /etc/haproxy, /var/www/html. 755 cukup;
+    # semua skrip pengelola dijalankan sebagai root.
+    chmod 755 "$dir"
 done
 
 clear
@@ -105,7 +108,14 @@ files=(
 
 for file in "${files[@]}"; do
     [ ! -f "$file" ] && touch "$file"
-    chmod 777 "$file"
+    # Dulu semuanya chmod 777. File .db berisi daftar akun pelanggan: dengan
+    # 777, akun SSH mana pun bisa memperpanjang masa aktifnya sendiri atau
+    # menghapus akun orang lain. Sekarang .db 600 (root saja), log 644.
+    case "$file" in
+        *.db)  chmod 600 "$file" ;;
+        *.log) chmod 644 "$file" ;;
+        *)     chmod 644 "$file" ;;
+    esac
 done
 
 # Atur akses eksekusi ke beberapa direktori

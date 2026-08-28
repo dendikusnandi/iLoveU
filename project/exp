@@ -89,7 +89,7 @@ if [[ -f /etc/ssh/.ssh.db ]]; then
         sed -i "/^### $user $exp/d" /etc/ssh/.ssh.db
         rm -f /etc/xray/log-createssh-$user.log
         rm -f "/etc/ssh/${user}"
-        rm -f "/var/www/html/ssh-${user}.txt"
+        rm -f "/var/www/html/ssh-${user}.txt" /var/www/html/ssh-${user}-*.txt
       fi
     fi
   done < <(grep '^### ' /etc/ssh/.ssh.db)

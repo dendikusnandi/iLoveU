@@ -132,7 +132,7 @@ if userdel -f $user 2>/dev/null; then
     # File limit IP dulu tidak pernah dihapus: username sama yang dibuat
     # ulang mewarisi batas lama tanpa ada yang tahu.
     rm -f "/etc/ssh/${user}"
-    rm -f "/var/www/html/ssh-${user}.txt"
+    rm -f "/var/www/html/ssh-${user}.txt" /var/www/html/ssh-${user}-*.txt
 
     clear
     print_rainbow "┌─────────────────────────────────────────┐"
