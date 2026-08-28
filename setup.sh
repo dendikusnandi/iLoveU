@@ -589,24 +589,6 @@ else
     echo -e "${red}Failed to download haproxy.cfg${neutral}"
 fi
 
-# Override lokal (opsional). Kalau VPS ini menjalankan aplikasi lain di :443
-# selain VPN, haproxy.cfg bawaan akan menimpanya dan aplikasi itu mati.
-# Taruh versi adaptasi (split SNI + ACL ACME) di /root/scautoku/ dan blok ini
-# memakainya. Kalau direktori itu tidak ada — kasus normal pada VPS baru —
-# tidak ada yang berubah dan config bawaan tetap dipakai.
-#
-# Validasinya TIDAK di sini: cert /etc/haproxy/yha.pem baru dibuat jauh di
-# bawah, dan `haproxy -c` gagal selama cert itu belum ada. Config bawaan
-# disimpan sekarang, validasi + rollback dilakukan setelah cert siap.
-if [ -f /root/scautoku/haproxy.cfg ]; then
-    cp -f /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.upstream 2>/dev/null
-    install -m 644 /root/scautoku/haproxy.cfg /etc/haproxy/haproxy.cfg
-    [ -f /root/scautoku/app-domains.lst ] &&
-        install -m 644 /root/scautoku/app-domains.lst /etc/haproxy/app-domains.lst
-    haproxy_local_override=1
-    echo -e "${green}[LOCAL] haproxy.cfg adaptasi dari /root/scautoku dipasang (validasi menyusul).${neutral}"
-fi
-
 # Download xray.conf
 if wget -O /etc/nginx/conf.d/xray.conf "$xray_conf_url" >/dev/null 2>&1; then
     echo -e "${green}Successfully downloaded xray.conf${neutral}"
@@ -731,21 +713,15 @@ cat /etc/xray/xray.crt /etc/xray/xray.key | tee /etc/haproxy/yha.pem
 chown www-data:www-data /etc/xray/xray.key
 chown www-data:www-data /etc/xray/xray.crt
 
-# Validasi override haproxy lokal — dilakukan DI SINI karena `haproxy -c`
-# butuh /etc/haproxy/yha.pem yang baru saja dibuat di atas. haproxy.cfg tidak
-# valid membuat haproxy gagal start dan SELURUH layanan :443/:80 mati, jadi
-# kalau tidak lolos, kembalikan config bawaan.
-if [ "${haproxy_local_override:-0}" = "1" ]; then
-    if haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1; then
-        echo -e "${green}[LOCAL] haproxy.cfg adaptasi LOLOS validasi.${neutral}"
-    else
-        echo -e "${red}[LOCAL] haproxy.cfg /root/scautoku TIDAK valid:${neutral}"
-        haproxy -c -f /etc/haproxy/haproxy.cfg 2>&1 | grep -i alert | head -3
-        if [ -f /etc/haproxy/haproxy.cfg.upstream ]; then
-            cp -f /etc/haproxy/haproxy.cfg.upstream /etc/haproxy/haproxy.cfg
-            echo -e "${yellow}[LOCAL] Dikembalikan ke haproxy.cfg bawaan.${neutral}"
-        fi
-    fi
+# Validasi haproxy.cfg — dilakukan DI SINI karena `haproxy -c` butuh
+# /etc/haproxy/yha.pem yang baru dibuat di atas. Config tidak valid membuat
+# haproxy gagal start dan SELURUH layanan :443/:80 mati, jadi lebih baik
+# diketahui sekarang daripada setelah reboot.
+if haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1; then
+    echo -e "${green}haproxy.cfg valid.${neutral}"
+else
+    echo -e "${red}PERINGATAN: haproxy.cfg TIDAK valid — haproxy tidak akan start:${neutral}"
+    haproxy -c -f /etc/haproxy/haproxy.cfg 2>&1 | grep -i alert | head -3
 fi
 
 mkdir -p /usr/lib/openvpn/ || echo -e "${red}Failed to create directory /usr/lib/openvpn/${neutral}"
@@ -1179,16 +1155,13 @@ fi
 # Bersihkan sisa instalasi. Semua skrip pengelola sudah dipasang ke /usr/bin
 # oleh menu.sh, jadi salinan installer di /root tidak dipakai lagi — dan kalau
 # tertinggal, suatu saat bisa dijalankan tanpa sadar lalu menimpa config yang
-# sudah disesuaikan. /root/scautoku SENGAJA tidak disentuh: itu sumber durable
-# untuk override haproxy/nginx dan `reapply-app`.
+# sudah disesuaikan.
 for leftover in /root/setup.sh /root/menu.sh /root/install-go.sh \
                 /root/openvpn.zip /root/vnstat-2.9.tar.gz /root/gotop \
                 /root/izin /root/.key; do
     [ -e "$leftover" ] && rm -rf "$leftover"
 done
 rm -rf /root/vnstat-2.9 2>/dev/null
-# .upstream hanya bahan rollback selama instalasi, tidak dipakai setelahnya.
-rm -f /etc/haproxy/haproxy.cfg.upstream 2>/dev/null
 
 
 clear

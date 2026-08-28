@@ -32,24 +32,10 @@ screen -S setup ./setup.sh
 - Setelah instalasi selesai, salinan installer di `/root` (`setup.sh`, `menu.sh`,
   arsip sementara) dihapus otomatis. Semua perintah pengelola sudah terpasang di
   `/usr/bin`, jadi cukup jalankan `menu`.
-
-### 🔧 Override config lokal (opsional)
-
-VPS yang juga menjalankan aplikasi lain di port 443 akan kehilangan aplikasi itu,
-karena `haproxy.cfg` bawaan installer menimpa konfigurasi yang sudah ada.
-
-Untuk mencegahnya, taruh versi konfigurasimu sendiri di `/root/scautoku/`:
-
-| file | fungsi |
-|---|---|
-| `haproxy.cfg` | versi adaptasi, mis. split SNI :443 + ACL ACME di :80 |
-| `app-domains.lst` | daftar domain aplikasi non-VPN (opsional) |
-
-Kalau `haproxy.cfg` ada di situ, installer memakainya alih-alih versi bawaan,
-memvalidasi dengan `haproxy -c`, dan otomatis kembali ke bawaan bila tidak valid
-(supaya tidak mematikan :443/:80). Direktori ini **tidak dihapus** saat
-pembersihan, dan **tidak wajib** — pada VPS baru tanpa direktori itu instalasi
-berjalan normal tanpa perubahan perilaku apa pun.
+- Installer menimpa `/etc/haproxy/haproxy.cfg` dan `/etc/nginx/nginx.conf` dengan
+  template bawaan. Kalau VPS ini juga melayani aplikasi lain di port 443/80,
+  backup konfigurasimu lebih dulu — setelah instalasi, `haproxy -c` dijalankan
+  otomatis dan hasilnya ditampilkan supaya config bermasalah langsung terlihat.
 
 ## ✨ Features
 
