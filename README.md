@@ -150,13 +150,21 @@ For support and bug reporting, please contact:
 
 ### Project Structure:
 ```
-scAUTO/
+iLoveU/
+├── BadVPN-UDPWG/        # binary badvpn-udpgw (UDP forwarding)
+├── VMess-VLESS-Trojan+Websocket+gRPC/
+│                        # config.json Xray per protokol
 ├── bot/                 # Node.js bot for trial account management
 ├── fodder/              # Configuration files and utilities
 ├── golang/              # Go-based REST API for account management
-├── project/             # Core automation scripts
+├── plugin/              # plugin web panel
+├── project/             # Core automation scripts (dipasang ke /usr/bin)
 ├── setup.sh             # Main installation script
-├── menu.sh              # User interface for managing services
+├── menu.sh              # Pengunduh skrip project/ ke /usr/bin
 ├── package-gohide.sh    # Package installation script
-└── bbr.sh               # BBR congestion control setup
+├── rootaccess.sh        # Aktifkan login root via password
+├── install-go.sh        # Pemasang toolchain Go (opsional)
+├── bbr.sh               # BBR congestion control setup
+├── update               # Skrip update
+└── LICENSE              # MIT
 ```
