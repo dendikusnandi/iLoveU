@@ -594,20 +594,17 @@ fi
 # Taruh versi adaptasi (split SNI + ACL ACME) di /root/scautoku/ dan blok ini
 # memakainya. Kalau direktori itu tidak ada — kasus normal pada VPS baru —
 # tidak ada yang berubah dan config bawaan tetap dipakai.
+#
+# Validasinya TIDAK di sini: cert /etc/haproxy/yha.pem baru dibuat jauh di
+# bawah, dan `haproxy -c` gagal selama cert itu belum ada. Config bawaan
+# disimpan sekarang, validasi + rollback dilakukan setelah cert siap.
 if [ -f /root/scautoku/haproxy.cfg ]; then
-    # Simpan config bawaan dulu, lalu validasi versi lokal sebelum dipakai:
-    # haproxy.cfg yang tidak valid membuat haproxy gagal start dan SELURUH
-    # layanan (:443/:80) mati. Kalau validasi gagal, kembali ke bawaan.
     cp -f /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.upstream 2>/dev/null
     install -m 644 /root/scautoku/haproxy.cfg /etc/haproxy/haproxy.cfg
     [ -f /root/scautoku/app-domains.lst ] &&
         install -m 644 /root/scautoku/app-domains.lst /etc/haproxy/app-domains.lst
-    if haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1; then
-        echo -e "${green}[LOCAL] haproxy.cfg adaptasi dari /root/scautoku dipasang.${neutral}"
-    else
-        cp -f /etc/haproxy/haproxy.cfg.upstream /etc/haproxy/haproxy.cfg 2>/dev/null
-        echo -e "${red}[LOCAL] haproxy.cfg /root/scautoku TIDAK valid — kembali ke bawaan.${neutral}"
-    fi
+    haproxy_local_override=1
+    echo -e "${green}[LOCAL] haproxy.cfg adaptasi dari /root/scautoku dipasang (validasi menyusul).${neutral}"
 fi
 
 # Download xray.conf
@@ -733,6 +730,23 @@ domain=$(cat /etc/xray/domain)
 cat /etc/xray/xray.crt /etc/xray/xray.key | tee /etc/haproxy/yha.pem
 chown www-data:www-data /etc/xray/xray.key
 chown www-data:www-data /etc/xray/xray.crt
+
+# Validasi override haproxy lokal — dilakukan DI SINI karena `haproxy -c`
+# butuh /etc/haproxy/yha.pem yang baru saja dibuat di atas. haproxy.cfg tidak
+# valid membuat haproxy gagal start dan SELURUH layanan :443/:80 mati, jadi
+# kalau tidak lolos, kembalikan config bawaan.
+if [ "${haproxy_local_override:-0}" = "1" ]; then
+    if haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1; then
+        echo -e "${green}[LOCAL] haproxy.cfg adaptasi LOLOS validasi.${neutral}"
+    else
+        echo -e "${red}[LOCAL] haproxy.cfg /root/scautoku TIDAK valid:${neutral}"
+        haproxy -c -f /etc/haproxy/haproxy.cfg 2>&1 | grep -i alert | head -3
+        if [ -f /etc/haproxy/haproxy.cfg.upstream ]; then
+            cp -f /etc/haproxy/haproxy.cfg.upstream /etc/haproxy/haproxy.cfg
+            echo -e "${yellow}[LOCAL] Dikembalikan ke haproxy.cfg bawaan.${neutral}"
+        fi
+    fi
+fi
 
 mkdir -p /usr/lib/openvpn/ || echo -e "${red}Failed to create directory /usr/lib/openvpn/${neutral}"
 if [ -d "/etc/openvpn/" ]; then
