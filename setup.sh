@@ -83,8 +83,27 @@ else
     domain="$1"
 fi
 # Cek IP domain dan VPS
-vps_ip=$(curl -s ipinfo.io/ip)
-domain_ip=$(getent ahosts "$domain" | awk '{print $1}' | head -n 1)
+# Abaikan HTTP(S)_PROXY lokal (privoxy/wireproxy dsb) supaya IP yang terdeteksi
+# adalah IP publik VPS, bukan IP exit proxy. Pakai beberapa sumber sebagai
+# fallback: satu sumber tunggal (dulu hanya ipinfo.io) membuat instalasi gagal
+# di langkah pertama kalau layanan itu sedang down atau rate-limit.
+unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
+detect_vps_ip() {
+    local src ip
+    for src in https://ifconfig.me https://ipv4.icanhazip.com https://ipinfo.io/ip https://api.ipify.org; do
+        ip=$(curl -4 -s --max-time 15 "$src" | tr -d '[:space:]')
+        if [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+            echo "$ip"
+            return 0
+        fi
+    done
+    return 1
+}
+vps_ip=$(detect_vps_ip)
+# ahostsv4, bukan ahosts: ahosts bisa mengembalikan alamat IPv6 lebih dulu
+# sehingga perbandingan dengan IPv4 VPS selalu gagal walau domain sudah benar.
+domain_ip=$(getent ahostsv4 "$domain" | awk '{print $1}' | head -n 1)
+echo "VPS IP: ${vps_ip:-<gagal deteksi>} | Domain IP: ${domain_ip:-<gagal resolve>}"
 if [ "$domain_ip" != "$vps_ip" ]; then
     echo -e "${red}Domain is not connected to the VPS IP. Please check again.${neutral}"
     exit 1
@@ -352,7 +371,11 @@ if [[ $os_id == "ubuntu" ]]; then
     fi
     curl $nginx_key_url | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
     echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list
-    echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
+    # Pin dibatasi ke paket nginx saja. Dulu `Package: *` dengan Pin-Priority 900
+    # membuat SELURUH paket diprioritaskan dari repo nginx.org; pada VPS yang
+    # sudah memakai nginx repo distro + python3-certbot-nginx, apt upgrade
+    # berikutnya menukar paketnya dan merusak layout sites-enabled.
+    echo -e "Package: nginx*\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
     if ! dpkg -s nginx >/dev/null 2>&1; then
         if ! apt install -y nginx; then
             echo -e "${red}Failed to install nginx${neutral}"
@@ -375,7 +398,7 @@ elif [[ $os_id == "debian" ]]; then
     fi
     curl $nginx_key_url | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
     echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list
-    echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
+    echo -e "Package: nginx*\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | tee /etc/apt/preferences.d/99nginx
     if ! dpkg -s nginx >/dev/null 2>&1; then
         apt install -y nginx || echo -e "${red}Failed to install nginx${neutral}"
     else
@@ -564,6 +587,27 @@ if wget -O /etc/haproxy/haproxy.cfg "$haproxy_cfg_url" >/dev/null 2>&1; then
     echo -e "${green}Successfully downloaded haproxy.cfg${neutral}"
 else
     echo -e "${red}Failed to download haproxy.cfg${neutral}"
+fi
+
+# Override lokal (opsional). Kalau VPS ini menjalankan aplikasi lain di :443
+# selain VPN, haproxy.cfg bawaan akan menimpanya dan aplikasi itu mati.
+# Taruh versi adaptasi (split SNI + ACL ACME) di /root/scautoku/ dan blok ini
+# memakainya. Kalau direktori itu tidak ada — kasus normal pada VPS baru —
+# tidak ada yang berubah dan config bawaan tetap dipakai.
+if [ -f /root/scautoku/haproxy.cfg ]; then
+    # Simpan config bawaan dulu, lalu validasi versi lokal sebelum dipakai:
+    # haproxy.cfg yang tidak valid membuat haproxy gagal start dan SELURUH
+    # layanan (:443/:80) mati. Kalau validasi gagal, kembali ke bawaan.
+    cp -f /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.upstream 2>/dev/null
+    install -m 644 /root/scautoku/haproxy.cfg /etc/haproxy/haproxy.cfg
+    [ -f /root/scautoku/app-domains.lst ] &&
+        install -m 644 /root/scautoku/app-domains.lst /etc/haproxy/app-domains.lst
+    if haproxy -c -f /etc/haproxy/haproxy.cfg >/dev/null 2>&1; then
+        echo -e "${green}[LOCAL] haproxy.cfg adaptasi dari /root/scautoku dipasang.${neutral}"
+    else
+        cp -f /etc/haproxy/haproxy.cfg.upstream /etc/haproxy/haproxy.cfg 2>/dev/null
+        echo -e "${red}[LOCAL] haproxy.cfg /root/scautoku TIDAK valid — kembali ke bawaan.${neutral}"
+    fi
 fi
 
 # Download xray.conf
