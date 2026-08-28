@@ -1,111 +1,188 @@
 #!/bin/bash
+# checkssh - Cek user SSH/OVPN yang sedang AKTIF (online)
+# Ditulis ulang & ditingkatkan: deteksi berbasis /proc + auth.log,
+# menangkap sesi tunnel (ssh -N / @notty) yg tak muncul di who/w,
+# plus sesi Dropbear (korelasi PID->auth.log), IP sumber, dan cek limit.
+# Bebas ketergantungan pada `ps`/`who` agar andal di segala lingkungan.
+# NB: hanya membaca status; TIDAK mengubah layanan apa pun.
 
-# Valid Script
-ipsaya=$(curl -sS ipv4.icanhazip.com)
-data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
-date_list=$(date +"%Y-%m-%d" -d "$data_server")
+# ---- Warna (samakan dgn menussh) ----
+green="\e[38;5;87m"
+red="\e[38;5;196m"
+neutral="\e[0m"
+blue="\e[38;5;130m"
+orange="\e[38;5;99m"
+yellow="\e[38;5;226m"
+purple="\e[38;5;141m"
+bold="\e[1m"
+reset="\e[0m"
 
+DB="/etc/ssh/.ssh.db"
 
-        # color configuration
-        dark_purple="\e[38;5;54m"
-        green="\e[38;5;82m"
-        red="\e[38;5;196m"
-        neutral="\e[0m"
-        blue="\e[38;5;130m"
-        orange="\e[38;5;99m"
-        yellow="\e[38;5;226m"
-        purple="\e[38;5;141m"
-        bold_white="\e[1;37m"
-        normal="\e[0m"
-        pink="\e[38;5;205m"
-
-        # Menentukan file log
-        if [ -e "/var/log/auth.log" ]; then
-            LOG_FILE="/var/log/auth.log"
-        elif [ -e "/var/log/secure" ]; then
-            LOG_FILE="/var/log/secure"
-        else
-            echo "File not exist"
-            exit 1
-        fi
-
-        # Membuat file temporary
-        touch /tmp/ssh_login_user
-
-        clear
-
-        # Fungsi untuk menampilkan informasi login SSH dan Dropbear
-        tampilkan_info_ssh_dropbear() {
-
-            echo -e "${orange}─────────────────────────────────────────${neutral}"
-            echo -e "${green}         SSH USER LOGIN ACCOUNTS ${neutral}"
-            echo -e "${orange}─────────────────────────────────────────${neutral}"
-
-            cat $LOG_FILE | grep -i sshd | grep -i "Accepted password for" >/tmp/login-db-ssh.txt
-            cat $LOG_FILE | grep -i dropbear | grep -i "Password auth succeeded" >/tmp/login-db-dropbear.txt
-
-            ssh_pids=($(pgrep sshd))
-            dropbear_pids=($(pgrep dropbear))
-
-            for ssh_pid in "${ssh_pids[@]}"; do
-                if grep -q "sshd\[$ssh_pid\]" /tmp/login-db-ssh.txt; then
-                    grep "sshd\[$ssh_pid\]" /tmp/login-db-ssh.txt >/tmp/login-db-pid-ssh.txt
-                    ssh_num=$(wc -l </tmp/login-db-pid-ssh.txt)
-                    ssh_user=$(grep -oP '(?<=for )\w+' /tmp/login-db-pid-ssh.txt)
-                    ssh_ip=$(grep -oP '(?<=from )\d+\.\d+\.\d+\.\d+' /tmp/login-db-pid-ssh.txt)
-                    echo "$ssh_pid $ssh_user $ssh_ip" >>/tmp/ssh_login_user
-                fi
-            done
-
-            for dropbear_pid in "${dropbear_pids[@]}"; do
-                if grep -q "dropbear\[$dropbear_pid\]" /tmp/login-db-dropbear.txt; then
-                    grep "dropbear\[$dropbear_pid\]" /tmp/login-db-dropbear.txt >/tmp/login-db-pid-dropbear.txt
-                    dropbear_num=$(wc -l </tmp/login-db-pid-dropbear.txt)
-                    dropbear_user=$(grep -oP "(?<=for ')\w+(?=' from)" /tmp/login-db-pid-dropbear.txt | sed "s/'//g")
-                    dropbear_ip=$(grep -oP '(?<=from )\d+\.\d+\.\d+\.\d+' /tmp/login-db-pid-dropbear.txt | cut -d ':' -f 1)
-                    echo "$dropbear_pid $dropbear_user $dropbear_ip" >>/tmp/ssh_login_user
-                fi
-            done
-
-            tampilkan_info_pengguna "/tmp/ssh_login_user"
-        }
-
-        tampilkan_info_pengguna() {
-    local file=$1
-    user_list=($(grep '^###' /etc/ssh/.ssh.db | cut -d ' ' -f 2 | sort | uniq))
-
-    echo -e "${dark_purple}─────────────────────────────────────────${neutral}"
-    printf " %-12s | %-7s | %-7s\n" "Username" "LoginIP" "LimitIP"
-    echo -e "${dark_purple}─────────────────────────────────────────${neutral}"
-
-    total_online=0
-    for user in "${user_list[@]}"; do
-        login_ip=$(grep -w "$user" "$file" | awk '{print $3}' | sort -u | wc -l)
-        [[ -e /etc/ssh/$user ]] && limit_ip=$(cat /etc/ssh/$user) || limit_ip="0"
-
-        # kalau limit_ip=0 artinya unlimited
-        if [[ "$limit_ip" -eq 0 ]]; then
-            limit_ip="∞"
-        fi
-
-        # tampilkan hanya jika ada login aktif
-        if [[ $login_ip -gt 0 ]]; then
-            printf " %-12s | %-7s | %-7s\n" "$user" "$login_ip" "$limit_ip"
-            ((total_online++))
-        fi
+# ---- Ambil baris log auth utk sebuah pola (auth.log lalu fallback journald) ----
+grab_log() {
+    local pat="$1" line=""
+    local f
+    for f in /var/log/auth.log /var/log/auth.log.1; do
+        [ -r "$f" ] || continue
+        line=$(grep -aE "$pat" "$f" 2>/dev/null | tail -1)
+        [ -n "$line" ] && { printf '%s\n' "$line"; return 0; }
     done
-
-    echo -e "${orange}─────────────────────────────────────────${neutral}"
-    echo -e "${green} Total User Online : $total_online"
-    echo -e "${orange}─────────────────────────────────────────${neutral}"
+    if command -v journalctl >/dev/null 2>&1; then
+        line=$(journalctl -q --no-pager -n 8000 2>/dev/null | grep -aE "$pat" | tail -1)
+        [ -n "$line" ] && { printf '%s\n' "$line"; return 0; }
+    fi
+    return 1
 }
 
-        # Menampilkan informasi
-        tampilkan_info_ssh_dropbear
+# ---- Kumpulkan sesi hidup dgn memindai /proc (ground-truth) ----
+declare -A OSSH_CNT      # user -> jumlah sesi OpenSSH
+declare -A OSSH_WHERE    # user -> "pts/0 notty ..." (tipe koneksi)
+declare -A DROP_CNT      # user -> jumlah sesi Dropbear
+declare -A DROP_IP       # user -> "ip ip ..."
+declare -A SEEN_USER     # user -> 1 (pernah kelihatan online)
 
-        # Membersihkan file temporary
-        rm -rf /tmp/ssh_login_user /tmp/login-db-ssh.txt /tmp/login-db-dropbear.txt /tmp/login-db-pid-ssh.txt /tmp/login-db-pid-dropbear.txt
-        echo " "
-        read -n 1 -s -r -p "Press [ Enter ] to back on menu"
-        menu
-    
+scan_sessions() {
+    local p pid comm cmd user tty line ip
+    for p in /proc/[0-9]*; do
+        pid=${p#/proc/}
+        comm=$( { tr -d '\0' < "$p/comm"; } 2>/dev/null ) || continue
+        [ -n "$comm" ] || continue
+        case "$comm" in
+            sshd|sshd-session)
+                cmd=$( { tr '\0' ' ' < "$p/cmdline"; } 2>/dev/null )
+                # Hanya sesi ter-autentikasi: pola "sshd[-session]: <user>@<tty>"
+                # Listener ("sshd: /usr/sbin/sshd -D") & pra-auth ("[accepted]"/"[net]") otomatis tersaring.
+                if [[ $cmd =~ ^sshd(-session)?:\ ([a-z_][a-z0-9_.-]*)@([^ ]+) ]]; then
+                    user="${BASH_REMATCH[2]}"
+                    tty="${BASH_REMATCH[3]}"
+                    OSSH_CNT[$user]=$(( ${OSSH_CNT[$user]:-0} + 1 ))
+                    OSSH_WHERE[$user]="${OSSH_WHERE[$user]}${tty} "
+                    SEEN_USER[$user]=1
+                fi
+                ;;
+            dropbear)
+                # Semua proses dropbear ber-cmdline sama (master & anak).
+                # Sesi nyata = PID yg PUNYA baris "auth succeeded" di log & masih hidup.
+                line=$(grab_log "dropbear\[$pid\]: .*[Aa]uth succeeded for")
+                if [ -n "$line" ] && [[ $line =~ succeeded\ for\ \'([^\']+)\'\ from\ ([0-9a-fA-F:.]+) ]]; then
+                    user="${BASH_REMATCH[1]}"
+                    ip="${BASH_REMATCH[2]}"
+                    DROP_CNT[$user]=$(( ${DROP_CNT[$user]:-0} + 1 ))
+                    DROP_IP[$user]="${DROP_IP[$user]}${ip} "
+                    SEEN_USER[$user]=1
+                fi
+                ;;
+        esac
+    done
+}
+
+# ---- Ringkas daftar (uniq + hitung) utk tampilan rapi ----
+fmt_list() {
+    # stdin: kata dipisah spasi -> "a x2, b, c"
+    tr ' ' '\n' | sed '/^$/d' | sort | uniq -c | \
+        awk '{ if ($1>1) printf "%s x%s, ", $2, $1; else printf "%s, ", $2 }' | \
+        sed 's/, $//'
+}
+
+clear
+scan_sessions
+
+echo -e "${orange}┌──────────────────────────────────────────┐${neutral}"
+echo -e "${orange}│${neutral}   ${bold}${green}   CEK USER LOGIN / SESI AKTIF   ${neutral}       ${orange}│${neutral}"
+echo -e "${orange}└──────────────────────────────────────────┘${neutral}"
+echo -e "   ${blue}Waktu :${neutral} $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo -e "   ${blue}Login :${neutral} OpenSSH(22/2222/2223) + Dropbear(109/143)"
+echo -e "${orange}────────────────────────────────────────────${neutral}"
+
+total_acc=0
+online_acc=0
+sum_ossh=0
+sum_drop=0
+
+if [ ! -r "$DB" ]; then
+    echo -e "   ${red}Database akun $DB tidak terbaca.${neutral}"
+else
+    while read -r tag user exp _; do
+        [ "$tag" = "###" ] || continue
+        [ -n "$user" ] || continue
+        total_acc=$(( total_acc + 1 ))
+
+        o=${OSSH_CNT[$user]:-0}
+        d=${DROP_CNT[$user]:-0}
+        tot=$(( o + d ))
+        sum_ossh=$(( sum_ossh + o ))
+        sum_drop=$(( sum_drop + d ))
+
+        # limit IP per user
+        lim="-"
+        [ -r "/etc/ssh/$user" ] && lim=$(tr -dc '0-9' < "/etc/ssh/$user" 2>/dev/null)
+        [ -z "$lim" ] && lim="-"
+
+        # status expired?
+        exptxt="$exp"
+        today=$(date +%Y-%m-%d)
+        if [ -n "$exp" ] && [[ "$exp" < "$today" ]]; then
+            exptxt="${exp} ${red}(EXPIRED)${neutral}"
+        fi
+
+        if [ "$tot" -gt 0 ]; then
+            online_acc=$(( online_acc + 1 ))
+            stat="${green}● ONLINE${neutral}"
+        else
+            stat="${neutral}○ offline${neutral}"
+        fi
+
+        echo -e "  ${green}▸ ${bold}${user}${neutral}  ${stat}"
+        echo -e "      exp: ${yellow}${exptxt}${neutral}   limit: ${yellow}${lim}${neutral} IP"
+
+        # rincian OpenSSH
+        where=$(printf '%s' "${OSSH_WHERE[$user]}" | fmt_list)
+        [ -n "$where" ] && where=" ${neutral}[$where]" || where=""
+        echo -e "      OpenSSH : ${o} sesi${where}"
+
+        # rincian Dropbear + IP
+        ips=$(printf '%s' "${DROP_IP[$user]}" | fmt_list)
+        [ -n "$ips" ] && ips=" ${neutral}[dari $ips]" || ips=""
+        echo -e "      Dropbear: ${d} sesi${ips}"
+
+        # peringatan over-limit
+        if [ "$lim" != "-" ] && [ "$tot" -gt "$lim" ] 2>/dev/null; then
+            echo -e "      ${red}${bold}⚠ MELEBIHI LIMIT (${tot}/${lim})${neutral}"
+        fi
+        echo -e "${orange}   ·······································${neutral}"
+    done < <(grep -E "^### " "$DB")
+fi
+
+# ---- Sesi milik user di luar database (mis. root/admin) ----
+extra=""
+for u in "${!SEEN_USER[@]}"; do
+    if ! grep -qE "^### $u( |$)" "$DB" 2>/dev/null; then
+        eo=${OSSH_CNT[$u]:-0}; ed=${DROP_CNT[$u]:-0}
+        extra="${extra}      ${purple}${u}${neutral}: OpenSSH ${eo}, Dropbear ${ed}\n"
+        sum_ossh=$(( sum_ossh + eo ))
+        sum_drop=$(( sum_drop + ed ))
+    fi
+done
+if [ -n "$extra" ]; then
+    echo -e "  ${blue}Sesi non-akun (sistem/admin):${neutral}"
+    echo -e "$extra"
+fi
+
+grand=$(( sum_ossh + sum_drop ))
+echo -e "${orange}┌──────────────────────────────────────────┐${neutral}"
+echo -e "${orange}│${neutral}  ${bold}RINGKASAN${neutral}"
+echo -e "${orange}│${neutral}  Akun terdaftar : ${yellow}${total_acc}${neutral}"
+echo -e "${orange}│${neutral}  Akun online    : ${green}${online_acc}${neutral} / ${total_acc}"
+echo -e "${orange}│${neutral}  Koneksi OpenSSH: ${green}${sum_ossh}${neutral}"
+echo -e "${orange}│${neutral}  Koneksi Dropbr : ${green}${sum_drop}${neutral}"
+echo -e "${orange}│${neutral}  Total sesi     : ${bold}${green}${grand}${neutral}"
+echo -e "${orange}└──────────────────────────────────────────┘${neutral}"
+echo -e ""
+
+read -n 1 -s -r -p "   Tekan sembarang tombol untuk kembali ke menu"
+echo -e ""
+# Kembali ke menu SSH (loop natural). exec agar tak menumpuk proses.
+if command -v menussh >/dev/null 2>&1; then
+    exec menussh
+fi

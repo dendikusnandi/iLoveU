@@ -58,6 +58,9 @@ wget -q -O trialvmess "https://raw.githubusercontent.com/dendikusnandi/iLoveU/re
 wget -q -O trialvless "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialvless"
 wget -q -O trialssh "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialssh"
 wget -q -O trialshadowsocks "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialshadowsocks"
+# trialtrojan sebelumnya tidak pernah diunduh sama sekali, padahal
+# menutrojan:427 memanggilnya -> pilihan 8 di menu trojan selalu gagal.
+wget -q -O trialtrojan "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialtrojan"
 
 
 chmod +x addshadowsocks
@@ -106,6 +109,7 @@ chmod +x trialvmess
 chmod +x trialvless
 chmod +x trialssh
 chmod +x trialshadowsocks
+chmod +x trialtrojan
 
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
