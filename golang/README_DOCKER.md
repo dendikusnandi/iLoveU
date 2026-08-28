@@ -2,18 +2,18 @@
 
 This guide explains how to containerize the Go VPN Account Management API using Docker and upload it to Docker Hub.
 
-## Pre-built Docker Image
+## Build the Docker Image
 
-You can pull the pre-built Docker image from Docker Hub:
+Image dibangun dari binary di repo ini (lihat golang/Dockerfile), bukan menarik image pihak lain:
 
 ```bash
-docker pull hidessh99/vpn-rest:v1
+docker build -t iloveu/vpn-rest:latest golang/
 ```
 
 
-## Running the Container from Docker Hub
+## Running the Container
 
-To run the container from Docker Hub:
+Jalankan kontainer:
 
 ```bash
 docker run -d \
@@ -22,13 +22,13 @@ docker run -d \
   -e PORT=3005 \
   -e API_KEY=your_api_key_here \
   -e AllowOrigins=* \
-  hidessh99/vpn-rest:v1
+  iloveu/vpn-rest:latest
 ```
 
-You can also pull the latest version:
+Atau lewat compose (ikut build sendiri):
 
 ```bash
-docker pull hidessh99/vpn-rest:latest
+docker build -t iloveu/vpn-rest:latest golang/
 ```
 
 ## Environment Variables
@@ -51,7 +51,7 @@ version: '3.8'
 
 services:
   vpn-api:
-    image: hidessh99/vpn-rest:v1
+    image: iloveu/vpn-rest:latest
     container_name: vpn-api
     ports:
       - "3005:3005"
@@ -69,7 +69,7 @@ version: '3.8'
 
 services:
   vpn-api:
-    image: hidessh99/vpn-rest:latest
+    image: iloveu/vpn-rest:latest
     container_name: vpn-api
     ports:
       - "3005:3005"

@@ -305,5 +305,5 @@ Make sure these commands are properly installed and accessible on your system.
 You can pull the pre-built Docker image from Docker Hub:
 
 ```bash
-docker pull hidessh99/vpn-rest:v1
+docker build -t iloveu/vpn-rest:latest golang/
 ```
