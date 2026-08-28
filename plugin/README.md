@@ -1,4 +1,4 @@
-# plugin connect web panel hidessh
+# plugin connect web panel
 ## Installation
 
  instal plugin hide backend :

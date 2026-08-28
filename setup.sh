@@ -70,7 +70,7 @@ if [ -z "$1" ]; then
     echo -e "${blue}    │   ${green}┌─┐┬ ┬┌┬┐┌─┐┌─┐┌─┐┬─┐┬┌─┐┌┬┐  ┬  ┬┌┬┐┌─┐"
     echo -e "${blue}    │   ${green}├─┤│ │ │ │ │└─┐│  ├┬┘│├─┘ │   │  │ │ ├┤    "
     echo -e "${blue}    │   ${green}┴ ┴└─┘ ┴ └─┘└─┘└─┘┴└─┴┴   ┴   ┴─┘┴ ┴ └─┘   ${neutral}"
-    echo -e "${blue}    │   ${yellow}Copyright${reset} (C)${gray} https://t.me/hidessh   ${neutral}"
+    echo -e "${blue}    │   ${yellow}Fork${reset} (C)${gray} github.com/dendikusnandi/iLoveU   ${neutral}"
     echo -e "${blue}    └───────────────────────────────────────────────┘${neutral}"
     echo -e "${blue}    ────────────────────────────────────────────────${neutral}"
     echo -e "${yellow}     Masukkan domain Anda untuk memulai instalasi:${neutral}"
@@ -117,6 +117,8 @@ city=$(curl -s ipinfo.io/city)
 isp=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
 domain=$(cat /etc/xray/domain)
 ip=$(wget -qO- ipinfo.io/ip)
+# Cache IP publik supaya `menu` tidak perlu request jaringan tiap kali dibuka.
+[ -n "$ip" ] && echo "$ip" >/etc/xray/ip
 
 # Gerbang izin berbasis daftar IP (file `izin` di repo) DIBUANG pada fork ini:
 # installer tidak boleh bergantung pada daftar IP eksternal untuk bisa jalan.
