@@ -80,19 +80,29 @@ if [ ! -d /etc/ssh ]; then
     mkdir -p /etc/ssh
 fi
 
-# Remove old entries before updating to prevent duplicates
-sed -i "/^### $user /d" /etc/ssh/.ssh.db
+# Hitung tanggal baru DULU, sebelum menyentuh data apa pun.
+new_exp=$(date -d "$old_exp +${active_days} days" +"%Y-%m-%d")
+if [[ -z "$new_exp" ]]; then
+    echo "Gagal menghitung tanggal expiry baru. Perpanjangan dibatalkan."
+    exit 1
+fi
+
+# Terapkan ke sistem lebih dulu: kalau chage gagal, .ssh.db belum diubah
+# sehingga data lama masih utuh. Dulu urutannya kebalikan (sed -i hapus
+# baris dulu), jadi kegagalan di tengah menghilangkan entri akun.
+if ! chage -E "$new_exp" "$user" 2>/dev/null; then
+    echo "Gagal memperbarui masa aktif di sistem. Perpanjangan dibatalkan."
+    exit 1
+fi
+
+# Tulis .ssh.db lewat file sementara + mv (atomik), bukan hapus-lalu-tambah.
+tmp_db=$(mktemp /etc/ssh/.ssh.db.XXXXXX) || { echo "Gagal membuat file sementara."; exit 1; }
+grep -v "^### $user " /etc/ssh/.ssh.db >"$tmp_db" 2>/dev/null
+echo "### ${user} ${new_exp}" >>"$tmp_db"
+chmod --reference=/etc/ssh/.ssh.db "$tmp_db" 2>/dev/null
+mv -f "$tmp_db" /etc/ssh/.ssh.db
 
 echo "${ip_limit}" >/etc/ssh/${user}
-
-# Calculate new expiration date
-new_exp=$(date -d "$old_exp +${active_days} days" +"%Y-%m-%d")
-
-# Add updated entry
-echo "### ${user} ${new_exp}" >>/etc/ssh/.ssh.db
-
-# Update the user's expiration date
-chage -E "$new_exp" "$user"
 
 clear
 echo -e "${green}┌─────────────────────────────────────────┐${reset}"

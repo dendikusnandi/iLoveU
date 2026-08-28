@@ -7,7 +7,7 @@ NC='\e[0m'
 clear
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green}   INSTALLASI Add package HIdeSSH       ${neutral}"
+echo -e "${green}   INSTALLASI Add package iLoveU       ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 
 
@@ -20,7 +20,7 @@ wget -q -O /usr/local/bin/add-ssh "https://raw.githubusercontent.com/dendikusnan
 clear
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green} INSTALLASI delete package HIdeSSH      ${neutral}"
+echo -e "${green} INSTALLASI delete package iLoveU      ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 cd
 wget -q -O /usr/local/bin/del-vmess "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/dellaccvmess.sh" && chmod +x /usr/local/bin/del-vmess
@@ -33,7 +33,7 @@ clear
 
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green} INSTALLASI Check  package HIdeSSH      ${neutral}"
+echo -e "${green} INSTALLASI Check  package iLoveU      ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 cd
 
@@ -46,7 +46,7 @@ wget -q -O /usr/local/bin/check-vmess "https://raw.githubusercontent.com/dendiku
 
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green} INSTALLASI renew package HIdeSSH      ${neutral}"
+echo -e "${green} INSTALLASI renew package iLoveU      ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 cd
  
@@ -58,7 +58,7 @@ wget -q -O /usr/local/bin/renew-shadowsocks "https://raw.githubusercontent.com/d
 
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green} INSTALLASI Trial package HIdeSSH      ${neutral}"
+echo -e "${green} INSTALLASI Trial package iLoveU      ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 cd
 
@@ -69,6 +69,6 @@ wget -q -O /usr/local/bin/trial-trojan "https://raw.githubusercontent.com/dendik
 wget -q -O /usr/local/bin/trial-shadowsocks "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialshadowsocks" && chmod +x /usr/local/bin/trial-shadowsocks
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green} Finish install package HIdeSSH      ${neutral}"
+echo -e "${green} Finish install package iLoveU      ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 cd

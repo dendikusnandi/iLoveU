@@ -7,13 +7,13 @@ NC='\e[0m'
 clear
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green}   INSTALLASI rest-go HIdeSSH       ${neutral}"
+echo -e "${green}   INSTALLASI rest-go iLoveU       ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 cd
 
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green}   INSTALLASI golang restapi HIdeSSH       ${neutral}"
+echo -e "${green}   INSTALLASI golang restapi iLoveU       ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 
 cd

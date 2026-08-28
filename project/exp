@@ -82,9 +82,14 @@ if [[ -f /etc/ssh/.ssh.db ]]; then
 "
         ((TOTAL_EXPIRED++))
 
+        # Putus sesi aktif dulu, lalu bersihkan SEMUA jejak akun.
+        # Dulu /etc/ssh/<user> (limit IP) dan file config di web tertinggal.
+        pkill -KILL -u "$user" 2>/dev/null
         userdel -f "$user" 2>/dev/null
         sed -i "/^### $user $exp/d" /etc/ssh/.ssh.db
         rm -f /etc/xray/log-createssh-$user.log
+        rm -f "/etc/ssh/${user}"
+        rm -f "/var/www/html/ssh-${user}.txt"
       fi
     fi
   done < <(grep '^### ' /etc/ssh/.ssh.db)

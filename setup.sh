@@ -1084,7 +1084,7 @@ cd
 
 clear
 echo -e "${blue}─────────────────────────────────────────${neutral}"
-echo -e "${green}       INSTALLASI plugin HideSSH        ${neutral}"
+echo -e "${green}       INSTALLASI plugin iLoveU        ${neutral}"
 echo -e "${blue}─────────────────────────────────────────${neutral}"
 
 
@@ -1094,7 +1094,7 @@ rm -rf package-gohide.sh
 
 # cd
 # echo -e "${blue}─────────────────────────────────────────${neutral}"
-# echo -e "${green}   INSTALLASI golang bye HIdeSSH       ${neutral}"
+# echo -e "${green}   INSTALLASI golang bye iLoveU       ${neutral}"
 # echo -e "${blue}─────────────────────────────────────────${neutral}"
 
 

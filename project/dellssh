@@ -118,10 +118,22 @@ if [[ $confirm != "y" && $confirm != "Y" ]]; then
 fi
 
 # Deletion process
+# Putus sesi aktif SEBELUM userdel: tanpa ini akun yang dihapus tetap
+# memakai bandwidth sampai kliennya disconnect sendiri, dan userdel -f
+# bisa meninggalkan proses yatim.
+pkill -KILL -u "$user" 2>/dev/null
+sleep 1
+
 if userdel -f $user 2>/dev/null; then
-    sed -i "/^### $user/d" /etc/ssh/.ssh.db
+    # `sed "/^### $user/d"` tanpa spasi penutup ikut menghapus baris user
+    # lain yang berawalan sama (mis. hapus "budi" menghapus "budi2").
+    sed -i "/^### $user /d" /etc/ssh/.ssh.db
     rm -f /etc/xray/log-createssh-$user.log
-    
+    # File limit IP dulu tidak pernah dihapus: username sama yang dibuat
+    # ulang mewarisi batas lama tanpa ada yang tahu.
+    rm -f "/etc/ssh/${user}"
+    rm -f "/var/www/html/ssh-${user}.txt"
+
     clear
     print_rainbow "┌─────────────────────────────────────────┐"
     print_rainbow "│  SSH/OVPN ACCOUNT DELETED SUCCESSFULLY  │"

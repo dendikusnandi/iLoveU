@@ -1,29 +1,44 @@
 #!/bin/bash
 
-# Valid Script
-ipsaya=$(curl -sS ipv4.icanhazip.com)
-data_server=$(curl -v --insecure --silent https://google.com/ 2>&1 | grep Date | sed -e 's/< Date: //')
-date_list=$(date +"%Y-%m-%d" -d "$data_server")
-
-
 # Variables
-ip=$(wget -qO- ipv4.icanhazip.com)
+# 2 curl di awal (icanhazip + tanggal google) dibuang: hasilnya tidak pernah
+# dipakai, hanya membuat pembuatan akun menunggu jaringan.
+ip=$(cat /etc/xray/ip 2>/dev/null)
+[ -z "$ip" ] && ip=$(wget -qO- --timeout=5 ipv4.icanhazip.com 2>/dev/null)
 city=$(cat /etc/xray/city 2>/dev/null || echo "Unknown city")
 pubkey=$(cat /etc/slowdns/server.pub 2>/dev/null || echo "Pubkey not available")
 domain=$(cat /etc/xray/domain 2>/dev/null || hostname -f)
 
 clear
 
+[ -f /etc/ssh/.ssh.db ] || { mkdir -p /etc/ssh; touch /etc/ssh/.ssh.db; }
 
 while true; do
-    read -p "   Name: " user
-    if [[ ${#user} -lt 3 || ! "$user" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    read -r -p "   Name: " user
+    # Pesan error dulu selalu "cannot be empty" walau sebabnya lain.
+    # Username angka saja lolos regex tapi DITOLAK useradd ("invalid user
+    # name: use --badname") -> dulu akun gagal dibuat tapi tetap dicatat.
+    if [[ -z "$user" ]]; then
         printf "\033[1A\033[0J"
         echo -e "${red}   Username cannot be empty${reset}"
         continue
+    elif [[ ${#user} -lt 3 ]]; then
+        printf "\033[1A\033[0J"
+        echo -e "${red}   Username minimal 3 karakter${reset}"
+        continue
+    elif [[ ${#user} -gt 32 ]]; then
+        printf "\033[1A\033[0J"
+        echo -e "${red}   Username maksimal 32 karakter${reset}"
+        continue
+    elif [[ ! "$user" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+        printf "\033[1A\033[0J"
+        echo -e "${red}   Username harus huruf kecil/underscore di awal, lalu huruf/angka/_/-${reset}"
+        continue
     fi
-    if grep -q "^### $user " /etc/ssh/.ssh.db; then
-        random_number=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 5)
+    # Cek duplikat di .ssh.db DAN /etc/passwd. Dulu hanya .ssh.db, jadi
+    # username yang sudah ada di sistem membuat useradd gagal diam-diam.
+    if grep -q "^### $user " /etc/ssh/.ssh.db || id "$user" >/dev/null 2>&1; then
+        random_number=$(head /dev/urandom | tr -dc a-z0-9 | head -c 5)
         user="${random_number}${user}"
         echo -e "${yellow}   Username already exists. New username used: $user${reset}"
         break
@@ -35,7 +50,7 @@ echo ""
 echo -e "—————————————————————————————————————"
 echo "   Username : $user"
 while true; do
-    read -p "   Password: " passwd
+    read -r -p "   Password: " passwd
     if [[ -z "$passwd" ]]; then
         echo -e "${red}   Password cannot be empty${reset}"
     else
@@ -44,7 +59,7 @@ while true; do
 done
 
 while true; do
-    read -p "   Active period (days): " expired
+    read -r -p "   Active period (days): " expired
     if [[ -z "$expired" ]]; then
         echo -e "${red}   Active period cannot be empty${reset}"
     elif ! [[ $expired =~ ^[0-9]+$ ]]; then
@@ -57,7 +72,7 @@ while true; do
 done
 
 while true; do
-    read -p "   IP limit: " iplim
+    read -r -p "   IP limit: " iplim
     if [[ -z "$iplim" ]]; then
         echo -e "${red}   IP limit cannot be empty${reset}"
     elif ! [[ $iplim =~ ^[0-9]+$ ]]; then
@@ -70,14 +85,41 @@ while true; do
 done
 
 # Account creation process
-useradd -e $(date -d "$expired days" +"%Y-%m-%d") -s /bin/false -M $user
-exp="$(chage -l $user | grep "Account expires" | awk -F": " '{print $2}')"
-echo -e "$passwd\n$passwd\n" | passwd $user &>/dev/null
+# Dulu exit code useradd/passwd tidak pernah dicek: kalau useradd gagal
+# (username tidak valid / sudah ada), skrip tetap menulis ke .ssh.db dan
+# menampilkan "akun berhasil" -> pelanggan dapat detail untuk akun yang
+# tidak ada di sistem dan tidak bisa login sama sekali.
+exp_date=$(date -d "$expired days" +"%Y-%m-%d")
+if ! useradd -e "$exp_date" -s /bin/false -M "$user" 2>/tmp/.addssh_err; then
+    clear
+    echo -e "${red}—————————————————————————————————————${reset}"
+    echo -e "${red}   GAGAL MEMBUAT AKUN${reset}"
+    echo -e "${red}—————————————————————————————————————${reset}"
+    echo -e "   Username : $user"
+    echo -e "   Alasan   : $(cat /tmp/.addssh_err 2>/dev/null | head -1)"
+    echo -e "${red}—————————————————————————————————————${reset}"
+    rm -f /tmp/.addssh_err
+    exit 1
+fi
+rm -f /tmp/.addssh_err
+
+# `echo -e` menerjemahkan backslash: password "pa\ttest" jadi "pa<TAB>test",
+# sehingga pelanggan tidak bisa login dengan password yang dia terima.
+# chpasswd membaca apa adanya.
+if ! echo "$user:$passwd" | chpasswd 2>/dev/null; then
+    userdel -f "$user" 2>/dev/null
+    clear
+    echo -e "${red}   GAGAL menetapkan password — akun dibatalkan.${reset}"
+    exit 1
+fi
+exp="$(chage -l "$user" 2>/dev/null | grep "Account expires" | awk -F": " '{print $2}')"
 
 if [[ $iplim != "0" ]]; then
     echo "${iplim}" >/etc/ssh/${user}
 fi
-echo "### ${user} $(date -d "$expired days" +"%Y-%m-%d")" >>/etc/ssh/.ssh.db
+echo "### ${user} ${exp_date}" >>/etc/ssh/.ssh.db
+
+mkdir -p /var/www/html
 
 # Create configuration file
 cat >/var/www/html/ssh-$user.txt <<END
