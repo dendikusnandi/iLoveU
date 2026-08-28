@@ -125,7 +125,7 @@ ip=$(wget -qO- ipinfo.io/ip)
 nginx_key_url="https://nginx.org/keys/nginx_signing.key"
 dropbear_init_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/dropbear/dropbear"
 dropbear_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/dropbear"
-dropbear_dss_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/dropbear/dropbear_dss_host_key"
+# dropbear_dss_url dihapus: host key digenerate lokal via dropbearkey (lihat ~baris 468).
 sshd_conf_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/sshd"
 banner_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/banner"
 common_password_url="https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/fodder/examples/common-password"
@@ -465,8 +465,20 @@ if [ -n "$dropbear_conf_url" ]; then
     [ -f /etc/init.d/dropbear ] && rm /etc/init.d/dropbear
     wget -q -O /etc/init.d/dropbear "$dropbear_init_url" && chmod +x /etc/init.d/dropbear >/dev/null 2>&1 || echo -e "${red}Failed to download dropbear.init${neutral}"
 
-    [ -f /etc/dropbear/dropbear_dss_host_key ] && rm /etc/dropbear/dropbear_dss_host_key
-    wget -q -O /etc/dropbear/dropbear_dss_host_key "$dropbear_dss_url" && chmod +x /etc/dropbear/dropbear_dss_host_key >/dev/null 2>&1 || echo -e "${red}Failed to download dropbear_dss_host_key${neutral}"
+    # Host key Dropbear DIGENERATE LOKAL, tidak lagi diunduh dari repo.
+    # Sebelumnya key diambil dari fodder/dropbear/dropbear_dss_host_key, jadi
+    # semua VPS hasil install memakai identitas SSH yang sama dan bagian
+    # rahasianya bisa diunduh publik -> MITM tanpa peringatan di klien.
+    # Sekalian: izin key harus 600, bukan +x (host key bukan program).
+    [ -f /etc/dropbear/dropbear_dss_host_key ] && rm -f /etc/dropbear/dropbear_dss_host_key
+    mkdir -p /etc/dropbear
+    if dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key >/dev/null 2>&1; then
+        chmod 600 /etc/dropbear/dropbear_dss_host_key
+        echo -e "${green}Host key Dropbear digenerate unik untuk VPS ini${neutral}"
+    else
+        echo -e "${red}FATAL: gagal generate dropbear_dss_host_key${neutral}"
+        exit 1
+    fi
 else
     echo -e "${yellow}dropbear_conf_url is not set, skipping download of dropbear_dss_host_key${neutral}"
 fi
