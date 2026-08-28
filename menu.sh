@@ -22,7 +22,7 @@ wget -q -O backuprestore "https://raw.githubusercontent.com/dendikusnandi/iLoveU
 wget -q -O backuprestore.js "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/backuprestore.js"
 
 wget -q -O checkshadowsocks "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/checkshadowsocks"
-wget -q -O chechssh "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/chechssh"
+wget -q -O checkssh "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/checkssh"
 wget -q -O checktrojan "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/checktrojan"
 wget -q -O checkvless "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/checkvless"
 wget -q -O checkvmess "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/checkvmess"
@@ -36,7 +36,7 @@ wget -q -O dellvmess "https://raw.githubusercontent.com/dendikusnandi/iLoveU/ref
 wget -q -O exp "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/exp"
 wget -q -O features "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/features"
 wget -q -O limitip "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/limitip"
-wget -q -O limitssh "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/limitssh"
+wget -q -O limitipssh "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/limitipssh"
 wget -q -O logclear "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/logclear"
 
 wget -q -O menu "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/menu"
@@ -57,7 +57,7 @@ wget -q -O trial "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/he
 wget -q -O trialvmess "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialvmess"
 wget -q -O trialvless "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialvless"
 wget -q -O trialssh "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialssh"
-wget -q -O trialshadowsoks "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialshadowsoks"
+wget -q -O trialshadowsocks "https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/project/trialshadowsocks"
 
 
 chmod +x addshadowsocks
@@ -85,7 +85,7 @@ chmod +x dellvmess
 chmod +x exp
 chmod +x features
 chmod +x limitip
-chmod +x limitssh
+chmod +x limitipssh
 chmod +x clearlog
 
 chmod +x menu
@@ -105,7 +105,7 @@ chmod +x trial
 chmod +x trialvmess
 chmod +x trialvless
 chmod +x trialssh
-chmod +x trialshadowsoks
+chmod +x trialshadowsocks
 
 
 echo -e "${blue}─────────────────────────────────────────${neutral}"

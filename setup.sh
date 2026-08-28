@@ -1085,7 +1085,8 @@ rm -rf package-gohide.sh
 
 
 # cd
-# wget https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/backend/install-go.sh && chmod +x install-go.sh && ./install-go.sh
+# Path diperbaiki: install-go.sh ada di root repo, bukan backend/ (upstream 404).
+# wget https://raw.githubusercontent.com/dendikusnandi/iLoveU/refs/heads/main/install-go.sh && chmod +x install-go.sh && ./install-go.sh
 # rm -rf install-go.sh
 # cd
 
